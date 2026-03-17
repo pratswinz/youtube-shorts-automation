@@ -20,25 +20,7 @@ from config.settings import settings
 from config.constants import JobStatus
 from core.content_analyzer import ContentAnalyzer
 from core.prompt_generator import PromptGenerator
-
-
-@dataclass
-class VideoJob:
-    """Video generation job"""
-    job_id: str
-    user_id: int
-    prompt: str
-    duration: int
-    style: str
-    status: JobStatus
-    progress: int = 0
-    error: Optional[str] = None
-    output_path: Optional[Path] = None
-    metadata: Dict[str, Any] = None
-    
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+from core.job_queue import VideoJob
 
 
 class VideoGenerator:

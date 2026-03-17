@@ -209,7 +209,7 @@ Created: {status['created_at']}
         )
         
         # Add to queue
-        job_queue.add_job(job)
+        await job_queue.add_job(job)
         
         # Send confirmation
         await update.message.reply_text(

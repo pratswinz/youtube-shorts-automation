@@ -7,7 +7,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from loguru import logger
 import edge_tts
-from pydub import AudioSegment
 
 
 @dataclass
@@ -16,6 +15,20 @@ class TTSResult:
     audio_path: Path
     duration_seconds: float
     provider: str
+
+
+def _get_audio_duration(path: Path) -> float:
+    """Get audio duration in seconds without ffprobe"""
+    try:
+        from mutagen.mp3 import MP3
+        audio = MP3(str(path))
+        return audio.info.length
+    except ImportError:
+        # Fallback: estimate from file size (~16kbps for speech)
+        size = path.stat().st_size
+        return size / 16000.0  # rough estimate
+    except Exception:
+        return 30.0  # default fallback
 
 
 class EdgeTTSProvider:
@@ -46,9 +59,8 @@ class EdgeTTSProvider:
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(str(output_path))
             
-            # Get duration
-            audio = AudioSegment.from_mp3(str(output_path))
-            duration = len(audio) / 1000.0
+            # Get duration (using mutagen - no ffprobe needed)
+            duration = _get_audio_duration(output_path)
             
             logger.info(f"Speech generated: {duration:.2f}s")
             
@@ -115,9 +127,8 @@ class GoogleTTSProvider:
             with open(output_path, 'wb') as out:
                 out.write(response.audio_content)
             
-            # Get duration
-            audio = AudioSegment.from_mp3(str(output_path))
-            duration = len(audio) / 1000.0
+            # Get duration (no ffprobe needed)
+            duration = _get_audio_duration(output_path)
             
             logger.info(f"Speech generated: {duration:.2f}s")
             
@@ -169,9 +180,8 @@ class ElevenLabsTTSProvider:
                 with open(output_path, 'wb') as f:
                     f.write(response.content)
             
-            # Get duration
-            audio = AudioSegment.from_mp3(str(output_path))
-            duration = len(audio) / 1000.0
+            # Get duration (no ffprobe needed)
+            duration = _get_audio_duration(output_path)
             
             logger.info(f"Speech generated: {duration:.2f}s")
             

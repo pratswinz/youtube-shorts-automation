@@ -68,6 +68,22 @@ class JobQueue:
         """Get job by ID"""
         return self.jobs.get(job_id)
     
+    def get_job_status(self, job_id: str) -> Optional[dict]:
+        """Get job status as dictionary"""
+        job = self.jobs.get(job_id)
+        if not job:
+            return None
+        
+        return {
+            'job_id': job.job_id,
+            'status': job.status.value,
+            'progress': job.progress,
+            'error': job.error,
+            'output_path': str(job.output_path) if job.output_path else None,
+            'thumbnail_path': str(job.thumbnail_path) if job.thumbnail_path else None,
+            'metadata': job.metadata
+        }
+    
     def update_job(self, job_id: str, **kwargs):
         """Update job attributes"""
         if job_id in self.jobs:

@@ -37,14 +37,15 @@ class PiAPIProvider:
                 "Content-Type": "application/json"
             }
             
+            # PiAPI expects specific format based on their API docs
+            # Use flux1-dev for larger resolutions (schnell is limited to 1024x1024)
             data = {
-                "model": "flux1.1-pro",
-                "task_type": "image-to-image" if reference_image else "text-to-image",
+                "model": "Qubico/flux1-dev",
+                "task_type": "txt2img",
                 "input": {
                     "prompt": prompt,
                     "width": width,
-                    "height": height,
-                    "image_num": 1
+                    "height": height
                 }
             }
             
@@ -52,12 +53,17 @@ class PiAPIProvider:
                 import base64
                 with open(reference_image, 'rb') as f:
                     image_data = base64.b64encode(f.read()).decode()
+                data["task_type"] = "img2img"
                 data["input"]["image"] = f"data:image/jpeg;base64,{image_data}"
                 data["input"]["strength"] = 0.7
             
             async with httpx.AsyncClient(timeout=120.0) as client:
                 # Submit task
                 response = await client.post(self.base_url, json=data, headers=headers)
+                if response.status_code != 200:
+                    error_detail = response.text
+                    logger.error(f"PiAPI request failed. Status: {response.status_code}, Response: {error_detail}")
+                    logger.error(f"Request data: {data}")
                 response.raise_for_status()
                 task_id = response.json()["data"]["task_id"]
                 
@@ -71,7 +77,8 @@ class PiAPIProvider:
                     status_response.raise_for_status()
                     result = status_response.json()
                     
-                    if result["data"]["status"] == "completed":
+                    status = result["data"]["status"].lower()
+                    if status == "completed":
                         image_url = result["data"]["output"]["image_url"]
                         
                         # Download image
@@ -87,7 +94,7 @@ class PiAPIProvider:
                             prompt=prompt,
                             provider="piapi"
                         )
-                    elif result["data"]["status"] == "failed":
+                    elif status == "failed":
                         raise Exception(f"Image generation failed: {result['data'].get('error', 'Unknown error')}")
                 
                 raise Exception("Image generation timeout")

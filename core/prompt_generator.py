@@ -58,6 +58,7 @@ RULES:
 - Show the ACTUAL subject: "guava" means show guava, not generic fruit
 - Maintain VISUAL CONSISTENCY: use "same lighting", "same style", "same background"
 - Each prompt should be 15-25 words, detailed and concrete
+- NO TEXT OVERLAYS: Do not include any text, words, or captions in the images
 
 Output JSON format:
 {{
@@ -130,6 +131,7 @@ Inspect each prompt and ensure it will generate the EXACT image needed. Check fo
 3. VISUAL CLARITY: Will an AI image model understand this clearly?
 4. CONSISTENCY: Do all prompts maintain the same visual style?
 5. COMPLETENESS: Are important details included (lighting, composition, etc.)?
+6. NO TEXT: Remove any text overlays, captions, or words from the prompts
 
 For each prompt, either:
 - APPROVE: If it's perfect as-is

@@ -198,6 +198,13 @@ Created: {status['created_at']}
         
         logger.info(f"Received prompt from user {user_id}: {prompt}")
         
+        # Create notification callback
+        async def notify(message: str):
+            try:
+                await update.message.reply_text(message)
+            except Exception as e:
+                logger.warning(f"Failed to send notification: {e}")
+        
         # Create job
         job = VideoJob(
             job_id=job_queue.generate_job_id(),
@@ -205,7 +212,8 @@ Created: {status['created_at']}
             prompt=prompt,
             duration=60,  # Default 60 seconds
             style="engaging",
-            status=JobStatus.PENDING
+            status=JobStatus.PENDING,
+            notification_callback=notify
         )
         
         # Add to queue

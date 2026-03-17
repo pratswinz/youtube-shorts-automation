@@ -81,6 +81,9 @@ class VideoGenerator:
             
             # Step 2: Generate script
             logger.info(f"Generating script for: {job.prompt}")
+            if job.notification_callback:
+                await job.notification_callback("📝 Step 1/5: Generating script...")
+            
             script_result = await self.script_provider.generate_script(
                 prompt=job.prompt,
                 duration=job.duration,
@@ -101,6 +104,8 @@ class VideoGenerator:
             # Step 3: Generate voiceover
             job.status = JobStatus.GENERATING_VOICE
             logger.info(f"Generating voiceover in {language}")
+            if job.notification_callback:
+                await job.notification_callback("🎙️ Step 2/5: Generating voiceover...")
             
             audio_path = job_dir / "voiceover.mp3"
             tts_result = await self.tts_provider.generate_speech(
@@ -116,6 +121,8 @@ class VideoGenerator:
             # Step 4: Generate and refine image prompts
             job.status = JobStatus.GENERATING_IMAGES
             logger.info(f"Generating image prompts for {len(job.metadata['scenes'])} scenes")
+            if job.notification_callback:
+                await job.notification_callback(f"🎨 Step 3/5: Generating {len(job.metadata['scenes'])} images...")
             
             images_dir = job_dir / "images"
             images_dir.mkdir(exist_ok=True)
@@ -172,6 +179,8 @@ class VideoGenerator:
             # Step 6: Assemble video
             job.status = JobStatus.ASSEMBLING_VIDEO
             logger.info("Assembling final video")
+            if job.notification_callback:
+                await job.notification_callback("🎬 Step 4/5: Assembling video with FFmpeg...")
             
             from core.video_assembler import VideoAssembler
             assembler = VideoAssembler()
@@ -190,6 +199,8 @@ class VideoGenerator:
             
             # Step 7: Generate thumbnail
             logger.info("Generating thumbnail")
+            if job.notification_callback:
+                await job.notification_callback("🖼️ Step 5/5: Generating thumbnail...")
             thumbnail_path = job_dir / f"{job.job_id}_thumbnail.jpg"
             await assembler.generate_thumbnail(
                 title=script_result.title,

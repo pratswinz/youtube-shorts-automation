@@ -33,6 +33,7 @@ class VideoJob:
     thumbnail_path: Optional[Path] = None
     metadata: Dict = field(default_factory=dict)
     reference_image: Optional[Path] = None
+    notification_callback: Optional[callable] = None
 
 
 class JobQueue:

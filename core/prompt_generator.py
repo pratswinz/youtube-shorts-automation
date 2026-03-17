@@ -121,10 +121,14 @@ Output JSON:
             import json
             result = json.loads(response.choices[0].message.content)
             
-            # Extract refined prompts
-            refined_prompts = [
-                item['refined'] for item in result['inspection_results']
-            ]
+            # Extract refined prompts with safety checks
+            refined_prompts = []
+            for i, item in enumerate(result['inspection_results']):
+                refined = item.get('refined')
+                # Fallback to original if refined is None or empty
+                if not refined or refined.strip() == '':
+                    refined = item.get('original', prompts[i] if i < len(prompts) else '')
+                refined_prompts.append(refined)
             
             # Log inspection results
             quality = result.get('overall_quality', 'unknown')

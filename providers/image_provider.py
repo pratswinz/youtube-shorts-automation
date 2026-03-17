@@ -32,6 +32,10 @@ class PiAPIProvider:
                             height: int = 1920, reference_image: Optional[Path] = None) -> ImageResult:
         """Generate single image"""
         try:
+            # Validate prompt
+            if not prompt or not prompt.strip():
+                raise ValueError("Prompt cannot be empty or None")
+            
             headers = {
                 "X-API-Key": self.api_key,
                 "Content-Type": "application/json"
@@ -44,7 +48,7 @@ class PiAPIProvider:
                 "model": "Qubico/flux1-schnell",
                 "task_type": "txt2img",
                 "input": {
-                    "prompt": prompt,
+                    "prompt": prompt.strip(),
                     "width": width,
                     "height": height
                 }

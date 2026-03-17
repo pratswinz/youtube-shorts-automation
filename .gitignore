@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+
+# Output files
+output/
+temp/
+*.mp4
+*.mp3
+*.jpg
+*.png
+*.srt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bot runtime
+bot.pid
+nohup.out
+
+# Credentials
+config/credentials/*.json
+!config/credentials/.gitkeep
+
+# Backup files
+*_backup.py
+*_old.py
+
+# Test outputs
+test_output/
+test_*.mp4
+test_*.mp3

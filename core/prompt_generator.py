@@ -31,43 +31,21 @@ class PromptGenerator:
         # Build context from scenes
         scene_texts = "\n".join([f"{i+1}. {scene['text']}" for i, scene in enumerate(scenes)])
         
-        prompt = f"""You are an expert visual director for short-form videos.
+        prompt = f"""Visual director for {user_prompt}. Create {len(scenes)} image prompts in ENGLISH.
 
-USER WANTS TO CREATE: {user_prompt}
+SCENES: {scene_texts}
 
-NARRATION SCRIPT (what will be spoken):
-{scene_texts}
-
-VISUAL STRATEGY:
-- Main Subject: {visual_strategy.get('main_subject', 'N/A')}
-- Category: {visual_strategy.get('visual_category', 'N/A')}
-- Style: {visual_strategy.get('photography_style', 'N/A')}
-- Mood: {visual_strategy.get('mood', 'N/A')}
-
-YOUR TASK:
-Generate SPECIFIC, DETAILED image prompts in ENGLISH for each scene that:
-1. Directly visualize what's being said in that scene
-2. Feature the main subject prominently (e.g., if it's about guava, show actual guava fruit)
-3. Maintain consistent visual style across all scenes
-4. Use concrete, specific descriptions (NOT abstract concepts)
-5. Are optimized for AI image generation (Flux model)
+SUBJECT: {visual_strategy.get('main_subject')} ({visual_strategy.get('visual_category')})
+STYLE: {visual_strategy.get('photography_style')}, {visual_strategy.get('mood')} mood
 
 RULES:
-- Image prompts MUST be in ENGLISH (even if narration is in {language})
-- Be SPECIFIC: "fresh guava fruit cut in half showing pink flesh" NOT "fruit on table"
-- Show the ACTUAL subject: "guava" means show guava, not generic fruit
-- Maintain VISUAL CONSISTENCY: use "same lighting", "same style", "same background"
-- Each prompt should be 15-25 words, detailed and concrete
-- NO TEXT OVERLAYS: Do not include any text, words, or captions in the images
+- Show actual subject prominently (e.g., "guava" = show guava fruit)
+- 15-20 words each, specific and concrete
+- Consistent lighting/style across all
+- NO text overlays or captions
+- English prompts only
 
-Output JSON format:
-{{
-    "image_prompts": [
-        "detailed prompt for scene 1",
-        "detailed prompt for scene 2",
-        ...
-    ]
-}}"""
+JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
 
         try:
             client = AsyncGroq(api_key=settings.groq_api_key)
@@ -113,47 +91,22 @@ Output JSON format:
         prompts_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
         scenes_text = "\n".join([f"{i+1}. {s['text'][:80]}" for i, s in enumerate(scenes)])
         
-        inspection_prompt = f"""You are a quality control inspector for AI-generated image prompts.
+        inspection_prompt = f"""QC inspector for image prompts. Topic: {user_prompt}
 
-USER WANTS: {user_prompt}
-
-NARRATION SCENES:
-{scenes_text}
-
-GENERATED IMAGE PROMPTS:
+PROMPTS:
 {prompts_text}
 
-YOUR TASK:
-Inspect each prompt and ensure it will generate the EXACT image needed. Check for:
+Check: specificity, relevance, clarity, consistency, no text overlays.
 
-1. SPECIFICITY: Is the subject specific enough? (e.g., "guava fruit" not "fruit")
-2. RELEVANCE: Does it match what's being said in that scene?
-3. VISUAL CLARITY: Will an AI image model understand this clearly?
-4. CONSISTENCY: Do all prompts maintain the same visual style?
-5. COMPLETENESS: Are important details included (lighting, composition, etc.)?
-6. NO TEXT: Remove any text overlays, captions, or words from the prompts
-
-For each prompt, either:
-- APPROVE: If it's perfect as-is
-- REFINE: If it needs improvement (provide refined version)
-
-Output JSON format:
+Output JSON:
 {{
     "inspection_results": [
-        {{
-            "scene": 1,
-            "status": "approved" or "refined",
-            "original": "original prompt",
-            "refined": "refined prompt (if status is refined, otherwise same as original)",
-            "reason": "why it was approved or what was improved"
-        }},
+        {{"scene": 1, "status": "approved/refined", "original": "...", "refined": "...", "reason": "..."}},
         ...
     ],
     "overall_quality": "excellent/good/needs_improvement",
-    "main_issues_fixed": ["issue 1", "issue 2"]
-}}
-
-Be strict - only approve if the prompt will generate EXACTLY what's needed."""
+    "main_issues_fixed": ["issue1", "issue2"]
+}}"""
 
         try:
             client = AsyncGroq(api_key=settings.groq_api_key)

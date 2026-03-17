@@ -38,9 +38,10 @@ class PiAPIProvider:
             }
             
             # PiAPI expects specific format based on their API docs
-            # Use flux1-dev for larger resolutions (schnell is limited to 1024x1024)
+            # Use flux1-schnell for cost efficiency ($0.002/image vs $0.015 for dev)
+            # Max resolution: 1024x1024 pixels (width*height <= 1048576)
             data = {
-                "model": "Qubico/flux1-dev",
+                "model": "Qubico/flux1-schnell",
                 "task_type": "txt2img",
                 "input": {
                     "prompt": prompt,

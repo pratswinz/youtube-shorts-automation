@@ -50,11 +50,10 @@ class VideoAssembler:
             
             for i, (img, dur) in enumerate(zip(images, scene_durations)):
                 inputs.extend(['-loop', '1', '-t', str(dur), '-i', str(img)])
-                # Add zoom/pan effect for each image
+                # Simple scale without zoompan (much faster)
                 filter_parts.append(
-                    f"[{i}:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-                    f"crop=1080:1920,"
-                    f"zoompan=z='min(zoom+0.0015,1.5)':d={int(dur*30)}:s=1080x1920:fps=30[v{i}]"
+                    f"[{i}:v]scale={settings.video_width}:{settings.video_height}:force_original_aspect_ratio=increase,"
+                    f"crop={settings.video_width}:{settings.video_height}[v{i}]"
                 )
             
             # Concatenate all videos

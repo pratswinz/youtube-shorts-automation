@@ -27,17 +27,8 @@ class TelegramBot:
     
     def __init__(self, token: str):
         self.token = token
-        # Build app with aggressive timeout settings to force new connection
-        self.app = (
-            Application.builder()
-            .token(token)
-            .read_timeout(10)
-            .write_timeout(10)
-            .connect_timeout(10)
-            .pool_timeout(10)
-            .get_updates_read_timeout(10)
-            .build()
-        )
+        # Simple builder like it was on Sunday
+        self.app = Application.builder().token(token).build()
         self.video_generator = VideoGenerator()
         
         # Register handlers
@@ -326,11 +317,7 @@ Created: {status['created_at']}
         """Start the bot"""
         logger.info("Starting Telegram bot...")
         logger.success("Bot starting with polling...")
-        # Drop pending updates to force clean start
-        self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES, 
-            drop_pending_updates=True
-        )
+        self.app.run_polling(drop_pending_updates=True)
 
 
 def start_bot():

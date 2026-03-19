@@ -56,7 +56,8 @@ class EdgeTTSProvider:
             voice = self.voice_map.get(language, self.voice_map['english'])
             logger.info(f"Generating speech with Edge TTS: {voice}")
             
-            communicate = edge_tts.Communicate(text, voice)
+            # +20% faster rate for punchy short-form content
+            communicate = edge_tts.Communicate(text, voice, rate="+20%")
             await communicate.save(str(output_path))
             
             # Get duration (using mutagen - no ffprobe needed)

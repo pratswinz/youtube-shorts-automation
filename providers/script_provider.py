@@ -30,28 +30,30 @@ class GroqScriptProvider:
     
     async def generate_script(self, prompt: str, duration: int, style: str, language: str) -> ScriptResult:
         """Generate video script"""
-        system_prompt = f"""You are an expert video script writer for short-form content (YouTube Shorts, Instagram Reels, TikTok).
+        share_phrase = "शेयर करें अपने दोस्तों को भी!" if language == "hindi" else "Share this with your friends!"
+        
+        system_prompt = f"""You are a viral short-form video script writer for YouTube Shorts, Instagram Reels, TikTok.
 
-Create an engaging {duration}-second video script in {language} language.
+Create a punchy {duration}-second script in {language} language.
 
-Requirements:
-1. Hook viewers in first 2 seconds
-2. Clear, concise narration
-3. Break into scenes (5-10 seconds each)
-4. Natural pacing for {language} speakers
-5. Engaging and informative
+STRICT RULES:
+1. NEVER start with greetings (no "Namaste", "Hello", "Hi", "Doston", "Aaj hum", "Welcome" etc.)
+2. FIRST LINE must be a shocking fact, bold question, or dramatic statement that hooks instantly
+3. Fast-paced delivery - short punchy sentences, no filler words
+4. End the LAST scene with exactly this phrase: "{share_phrase}"
+5. Each scene: 8-12 seconds max
 
-Output JSON format:
+Output JSON:
 {{
-    "title": "Catchy video title in {language}",
-    "script": "Complete narration script in {language}",
-    "description": "Video description in {language}",
+    "title": "Catchy title in {language}",
+    "script": "Full narration in {language} - NO greetings, starts with hook, ends with share phrase",
+    "description": "Description in {language}",
     "tags": ["tag1", "tag2", "tag3"],
     "scenes": [
         {{
-            "text": "Scene narration in {language}",
+            "text": "Scene text in {language}",
             "timestamp": 0,
-            "duration": 5
+            "duration": 8
         }}
     ]
 }}"""

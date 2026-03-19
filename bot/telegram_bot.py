@@ -27,8 +27,16 @@ class TelegramBot:
     
     def __init__(self, token: str):
         self.token = token
-        # Simple builder like it was on Sunday
-        self.app = Application.builder().token(token).build()
+        # Higher write/connect timeouts needed for video file uploads
+        self.app = (
+            Application.builder()
+            .token(token)
+            .read_timeout(30)
+            .write_timeout(120)
+            .connect_timeout(30)
+            .pool_timeout(30)
+            .build()
+        )
         self.video_generator = VideoGenerator()
         
         # Add error handler to suppress noisy conflict errors
@@ -217,15 +225,54 @@ Created: {status['created_at']}
             except Exception as e:
                 logger.warning(f"Failed to send notification: {e}")
         
+        # Create completion callback to send video
+        async def on_complete(job: VideoJob):
+            logger.info(f"Completion callback triggered for job {job.job_id}")
+            
+            if not job.output_path or not job.output_path.exists():
+                await update.message.reply_text("❌ Video file not found")
+                return
+            
+            # Retry sending up to 3 times
+            for attempt in range(3):
+                try:
+                    logger.info(f"Sending video to user (attempt {attempt+1}): {job.output_path}")
+                    await update.message.reply_video(
+                        video=open(job.output_path, 'rb'),
+                        caption=f"✅ Your video is ready!\n\nPrompt: {job.prompt}",
+                        supports_streaming=True,
+                        read_timeout=120,
+                        write_timeout=120,
+                        connect_timeout=30
+                    )
+                    logger.success(f"Video sent to user for job {job.job_id}")
+                    
+                    if job.thumbnail_path and job.thumbnail_path.exists():
+                        await update.message.reply_photo(
+                            photo=open(job.thumbnail_path, 'rb'),
+                            caption="📸 Thumbnail"
+                        )
+                    return
+                except Exception as e:
+                    logger.error(f"Send attempt {attempt+1} failed: {e}")
+                    if attempt < 2:
+                        await asyncio.sleep(3)
+            
+            await update.message.reply_text(
+                f"❌ Failed to send video after 3 attempts.\n"
+                f"Video is saved at: {job.output_path}"
+            )
+        
         # Create job
         job = VideoJob(
             job_id=job_queue.generate_job_id(),
             user_id=user_id,
             prompt=prompt,
-            duration=60,  # Default 60 seconds
+            duration=60,
             style="engaging",
             status=JobStatus.PENDING,
-            notification_callback=notify
+            notification_callback=notify,
+            completion_callback=on_complete
         )
         
         # Add to queue
@@ -236,23 +283,25 @@ Created: {status['created_at']}
             f"✅ Video generation started!\n\n"
             f"Job ID: {job.job_id}\n"
             f"Prompt: {prompt}\n\n"
-            f"I'll send you the video when it's ready (usually 60-90 seconds).\n\n"
-            f"Use /status {job.job_id} to check progress."
+            f"I'll send you the video when it's ready (usually 60-90 seconds)."
         )
-        
-        # Monitor job in background
-        asyncio.create_task(self._monitor_job(job.job_id, update))
     
     async def _monitor_job(self, job_id: str, update: Update):
         """Monitor job progress and send updates"""
         last_progress = 0
+        max_checks = 60
+        check_count = 0
         
-        while True:
+        while check_count < max_checks:
             await asyncio.sleep(5)
+            check_count += 1
             
             status = job_queue.get_job_status(job_id)
             if not status:
+                logger.warning(f"Job {job_id} not found in queue (check {check_count})")
                 break
+            
+            logger.info(f"Monitoring job {job_id}: status={status['status']}, progress={status['progress']}%")
             
             # Send progress updates
             progress = status['progress']
@@ -263,12 +312,13 @@ Created: {status['created_at']}
                 last_progress = progress
             
             # Check if completed
-            if status['status'] == JobStatus.COMPLETED:
+            if status['status'] == JobStatus.COMPLETED.value:
+                logger.info(f"Job {job_id} completed, sending video...")
                 await self._send_completed_video(job_id, update)
                 break
             
             # Check if failed
-            if status['status'] == JobStatus.FAILED:
+            if status['status'] == JobStatus.FAILED.value:
                 await update.message.reply_text(
                     f"❌ Video generation failed\n\n"
                     f"Error: {status.get('error', 'Unknown error')}\n\n"

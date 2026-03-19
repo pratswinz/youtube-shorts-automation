@@ -137,59 +137,11 @@ class VideoAssembler:
         try:
             logger.info("Generating thumbnail")
             
-            # Open background image
+            # Use the first scene image as a clean thumbnail - no text overlays
             img = Image.open(background_image)
-            img = img.resize((1080, 1920), Image.Resampling.LANCZOS)
+            img = img.resize((settings.video_width, settings.video_height), Image.Resampling.LANCZOS)
             
-            # Add semi-transparent overlay
-            overlay = Image.new('RGBA', img.size, (0, 0, 0, 128))
-            img = img.convert('RGBA')
-            img = Image.alpha_composite(img, overlay)
-            
-            # Add title text
-            draw = ImageDraw.Draw(img)
-            
-            # Try to load a nice font
-            try:
-                font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 80)
-            except:
-                font = ImageFont.load_default()
-            
-            # Wrap text
-            words = title.split()
-            lines = []
-            current_line = []
-            
-            for word in words:
-                current_line.append(word)
-                test_line = ' '.join(current_line)
-                bbox = draw.textbbox((0, 0), test_line, font=font)
-                if bbox[2] - bbox[0] > 900:  # Max width
-                    current_line.pop()
-                    if current_line:
-                        lines.append(' '.join(current_line))
-                    current_line = [word]
-            
-            if current_line:
-                lines.append(' '.join(current_line))
-            
-            # Draw text centered
-            y = 800
-            for line in lines:
-                bbox = draw.textbbox((0, 0), line, font=font)
-                text_width = bbox[2] - bbox[0]
-                x = (1080 - text_width) / 2
-                
-                # Draw text with outline
-                for offset_x in [-2, 0, 2]:
-                    for offset_y in [-2, 0, 2]:
-                        draw.text((x + offset_x, y + offset_y), line, 
-                                fill=(0, 0, 0), font=font)
-                
-                draw.text((x, y), line, fill=(255, 255, 255), font=font)
-                y += 100
-            
-            # Convert back to RGB and save
+            # Save clean image with no text
             img = img.convert('RGB')
             img.save(output_path, quality=95)
             
@@ -198,7 +150,6 @@ class VideoAssembler:
             
         except Exception as e:
             logger.error(f"Thumbnail generation failed: {e}")
-            # Create simple fallback thumbnail
-            img = Image.new('RGB', (1080, 1920), color=(50, 50, 100))
+            img = Image.new('RGB', (settings.video_width, settings.video_height), color=(50, 50, 100))
             img.save(output_path)
             return output_path

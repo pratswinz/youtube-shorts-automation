@@ -34,6 +34,7 @@ class VideoJob:
     metadata: Dict = field(default_factory=dict)
     reference_image: Optional[Path] = None
     notification_callback: Optional[callable] = None
+    completion_callback: Optional[callable] = None
 
 
 class JobQueue:
@@ -121,6 +122,13 @@ class JobQueue:
                         await generator.generate_video(job)
                         job.status = JobStatus.COMPLETED
                         logger.success(f"Job {job_id} completed")
+                        
+                        # Call completion callback if provided
+                        if job.completion_callback:
+                            try:
+                                await job.completion_callback(job)
+                            except Exception as e:
+                                logger.error(f"Completion callback failed: {e}")
                         
                     except Exception as e:
                         job.status = JobStatus.FAILED

@@ -42,8 +42,9 @@ RULES:
 - Show actual subject prominently (e.g., "guava" = show guava fruit)
 - 15-20 words each, specific and concrete
 - Consistent lighting/style across all
-- NO text overlays or captions
+- NO text, NO words, NO letters, NO captions, NO subtitles, NO watermarks anywhere in image
 - English prompts only
+- End each prompt with: "no text, no words, clean image"
 
 JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
 
@@ -96,7 +97,7 @@ JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
 PROMPTS:
 {prompts_text}
 
-Check: specificity, relevance, clarity, consistency, no text overlays.
+Check: specificity, relevance, clarity, consistency. REJECT any prompt that might produce text/words/letters/subtitles in the image. Every refined prompt MUST end with "no text, no words, clean image".
 
 Output JSON:
 {{

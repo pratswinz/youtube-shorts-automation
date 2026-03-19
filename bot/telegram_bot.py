@@ -31,6 +31,9 @@ class TelegramBot:
         self.app = Application.builder().token(token).build()
         self.video_generator = VideoGenerator()
         
+        # Add error handler to suppress noisy conflict errors
+        self.app.add_error_handler(self._error_handler)
+        
         # Register handlers
         self.app.add_handler(CommandHandler("start", self.cmd_start))
         self.app.add_handler(CommandHandler("help", self.cmd_help))
@@ -39,6 +42,14 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("cancel", self.cmd_cancel))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_prompt))
         self.app.add_handler(CallbackQueryHandler(self.handle_callback))
+    
+    async def _error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle errors gracefully"""
+        error = context.error
+        if "Conflict" in str(error):
+            logger.warning("Telegram conflict detected - will retry automatically")
+        else:
+            logger.error(f"Error: {error}")
     
     async def cmd_start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command"""
@@ -313,10 +324,29 @@ Created: {status['created_at']}
         # Handle different callback actions here
         # (Can be extended for future features)
     
+    async def _force_clear_webhook(self):
+        """Force clear any existing webhooks"""
+        try:
+            await self.app.bot.delete_webhook(drop_pending_updates=True)
+            logger.info("Webhook cleared")
+            await asyncio.sleep(2)
+        except Exception as e:
+            logger.warning(f"Failed to clear webhook: {e}")
+    
     def run(self):
         """Start the bot"""
         logger.info("Starting Telegram bot...")
+        
+        # Force clear webhook before starting
+        import asyncio
+        try:
+            asyncio.get_event_loop().run_until_complete(self._force_clear_webhook())
+        except:
+            pass
+        
         logger.success("Bot starting with polling...")
+        
+        # Use polling with minimal settings
         self.app.run_polling(drop_pending_updates=True)
 
 

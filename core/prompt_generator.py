@@ -44,7 +44,9 @@ RULES:
 - Consistent lighting/style across all
 - NO text, NO words, NO letters, NO captions, NO subtitles, NO watermarks anywhere in image
 - English prompts only
-- End each prompt with: "no text, no words, clean image"
+- For any human: specify "anatomically correct, realistic proportions"
+- For cricketers/sportspeople: be explicit about object count (e.g., "holding ONE bat")
+- End each prompt with: "no text, no words, clean photorealistic image"
 
 JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
 
@@ -92,17 +94,36 @@ JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
         prompts_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
         scenes_text = "\n".join([f"{i+1}. {s['text'][:80]}" for i, s in enumerate(scenes)])
         
-        inspection_prompt = f"""QC inspector for image prompts. Topic: {user_prompt}
+        inspection_prompt = f"""You are a strict visual QC inspector for AI image prompts. Topic: {user_prompt}
 
-PROMPTS:
+PROMPTS TO INSPECT:
 {prompts_text}
 
-Check: specificity, relevance, clarity, consistency. REJECT any prompt that might produce text/words/letters/subtitles in the image. Every refined prompt MUST end with "no text, no words, clean image".
+SCENE CONTEXT:
+{scenes_text}
+
+YOUR JOB: Fix each prompt so the generated image will be physically realistic and relevant.
+
+REJECTION CRITERIA - Rewrite any prompt that could cause:
+1. ANATOMY ERRORS: extra limbs, missing limbs, wrong number of arms/legs/eyes/heads
+   - Humans have: 2 arms, 2 legs, 1 head, 2 eyes, 2 hands
+   - A batsman holds EXACTLY 1 cricket bat (never 2 or 3)
+   - A person has EXACTLY 2 legs (never 3 or 4)
+2. OBJECT COUNT ERRORS: wrong number of objects (e.g., "two bats in hand" is wrong)
+3. PHYSICS ERRORS: floating objects without context, impossible poses
+4. TEXT IN IMAGE: any words, letters, subtitles, watermarks, captions, signs with text
+5. IRRELEVANCE: image doesn't match the scene narration
+
+FIXING RULES:
+- Be very explicit: "cricketer holding ONE cricket bat in both hands"
+- Add "anatomically correct" for any human/animal
+- Add "realistic proportions" for any scene with people
+- Always end with: "no text, no words, no captions, clean photorealistic image"
 
 Output JSON:
 {{
     "inspection_results": [
-        {{"scene": 1, "status": "approved/refined", "original": "...", "refined": "...", "reason": "..."}},
+        {{"scene": 1, "status": "approved/refined", "original": "...", "refined": "FIXED prompt ending with no text no words no captions clean photorealistic image", "reason": "..."}},
         ...
     ],
     "overall_quality": "excellent/good/needs_improvement",

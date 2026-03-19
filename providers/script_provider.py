@@ -28,13 +28,18 @@ class GroqScriptProvider:
         self.client = AsyncGroq(api_key=api_key)
         self.model = "llama-3.3-70b-versatile"
     
-    async def generate_script(self, prompt: str, duration: int, style: str, language: str) -> ScriptResult:
+    async def generate_script(self, prompt: str, duration: int, style: str, language: str,
+                              realtime_context: str = None) -> ScriptResult:
         """Generate video script"""
         share_phrase = "शेयर करें अपने दोस्तों को भी!" if language == "hindi" else "Share this with your friends!"
-        
+
+        context_block = ""
+        if realtime_context:
+            context_block = f"\n\n{realtime_context}\n\nIMPORTANT: Use the above real-world facts in the script. Do NOT use outdated training data that contradicts these facts.\n"
+
         system_prompt = f"""You are a viral short-form video script writer for YouTube Shorts, Instagram Reels, TikTok.
 
-Create a punchy {duration}-second script in {language} language.
+Create a punchy {duration}-second script in {language} language.{context_block}
 
 STRICT RULES:
 1. NEVER start with greetings (no "Namaste", "Hello", "Hi", "Doston", "Aaj hum", "Welcome" etc.)
@@ -42,6 +47,7 @@ STRICT RULES:
 3. Fast-paced delivery - short punchy sentences, no filler words
 4. End the LAST scene with exactly this phrase: "{share_phrase}"
 5. Each scene: 8-12 seconds max
+6. Use ONLY factually accurate and up-to-date information
 
 Output JSON:
 {{

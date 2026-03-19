@@ -20,6 +20,7 @@ from config.settings import settings
 from config.constants import JobStatus
 from core.content_analyzer import ContentAnalyzer
 from core.prompt_generator import PromptGenerator
+from core.realtime_context import needs_realtime_info, fetch_realtime_context
 from core.job_queue import VideoJob
 
 
@@ -79,16 +80,26 @@ class VideoGenerator:
             prompt_analysis = await self.content_analyzer.analyze_prompt(job.prompt, job.style)
             logger.info(f"Visual strategy: {prompt_analysis['main_subject']} ({prompt_analysis['visual_category']})")
             
-            # Step 2: Generate script
+            # Step 2: Generate script (with real-time context if needed)
             logger.info(f"Generating script for: {job.prompt}")
             if job.notification_callback:
                 await job.notification_callback("📝 Step 1/5: Generating script...")
-            
+
+            # Fetch real-time context if topic needs latest info
+            realtime_context = None
+            if await needs_realtime_info(job.prompt):
+                if job.notification_callback:
+                    await job.notification_callback("🔍 Fetching latest info from web...")
+                realtime_context = await fetch_realtime_context(job.prompt)
+                if realtime_context:
+                    logger.info("Real-time context injected into script")
+
             script_result = await self.script_provider.generate_script(
                 prompt=job.prompt,
                 duration=job.duration,
                 style=job.style,
-                language=language
+                language=language,
+                realtime_context=realtime_context
             )
             
             logger.info(f"Script generated: {len(script_result.script)} chars, {len(script_result.metadata.get('scenes', []))} scenes")

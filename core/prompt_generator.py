@@ -39,13 +39,13 @@ SUBJECT: {visual_strategy.get('main_subject')} ({visual_strategy.get('visual_cat
 STYLE: {visual_strategy.get('photography_style')}, {visual_strategy.get('mood')} mood
 
 RULES:
-- Show actual subject prominently (e.g., "guava" = show guava fruit)
+- Show actual subject prominently and realistically
 - 15-20 words each, specific and concrete
-- Consistent lighting/style across all
-- NO text, NO words, NO letters, NO captions, NO subtitles, NO watermarks anywhere in image
+- Use real-world knowledge: correct anatomy, realistic object usage, physically possible scenes
+- For any human or animal: always specify realistic anatomy (correct limb count, proportions)
+- For any action: describe exactly how it looks in reality (e.g., how a person actually holds/uses something)
+- NO text, NO words, NO letters, NO captions, NO subtitles, NO watermarks
 - English prompts only
-- For any human: specify "anatomically correct, realistic proportions"
-- For cricketers/sportspeople: be explicit about object count (e.g., "holding ONE bat")
 - End each prompt with: "no text, no words, clean photorealistic image"
 
 JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
@@ -94,37 +94,40 @@ JSON: {{"image_prompts": ["prompt1", "prompt2", ...]}}"""
         prompts_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
         scenes_text = "\n".join([f"{i+1}. {s['text'][:80]}" for i, s in enumerate(scenes)])
         
-        inspection_prompt = f"""You are a strict visual QC inspector for AI image prompts. Topic: {user_prompt}
+        inspection_prompt = f"""You are an expert visual QC inspector for AI image generation prompts. Topic: {user_prompt}
 
 PROMPTS TO INSPECT:
 {prompts_text}
 
-SCENE CONTEXT:
+SCENE NARRATION CONTEXT:
 {scenes_text}
 
-YOUR JOB: Fix each prompt so the generated image will be physically realistic and relevant.
+YOUR TASK: For each prompt, reason about what the AI image generator will actually produce.
+Fix any prompt that would generate a physically impossible, anatomically wrong, or irrelevant image.
 
-REJECTION CRITERIA - Rewrite any prompt that could cause:
-1. ANATOMY ERRORS: extra limbs, missing limbs, wrong number of arms/legs/eyes/heads
-   - Humans have: 2 arms, 2 legs, 1 head, 2 eyes, 2 hands
-   - A batsman holds EXACTLY 1 cricket bat (never 2 or 3)
-   - A person has EXACTLY 2 legs (never 3 or 4)
-2. OBJECT COUNT ERRORS: wrong number of objects (e.g., "two bats in hand" is wrong)
-3. PHYSICS ERRORS: floating objects without context, impossible poses
-4. TEXT IN IMAGE: any words, letters, subtitles, watermarks, captions, signs with text
-5. IRRELEVANCE: image doesn't match the scene narration
+THINK through these questions for each prompt:
+- Does this scene involve a real person/animal? → Verify correct number of limbs, body parts, realistic anatomy
+- Does this involve physical objects? → Verify realistic object counts (can a person hold that many? does that exist?)
+- Does this involve action/sport? → Verify the action is physically possible and equipment is used correctly
+- Is the scene relevant to what the narration says?
+- Could any part of this prompt cause text/words to appear in the image?
 
-FIXING RULES:
-- Be very explicit: "cricketer holding ONE cricket bat in both hands"
-- Add "anatomically correct" for any human/animal
-- Add "realistic proportions" for any scene with people
-- Always end with: "no text, no words, no captions, clean photorealistic image"
+FIX RULES:
+- Use your real-world knowledge to determine what is physically correct
+- Be specific and explicit (e.g., don't say "player with bat" - say exactly what a realistic scene looks like)
+- Add "anatomically correct, realistic human proportions" whenever humans are depicted
+- Always end every refined prompt with: "no text, no words, no captions, clean photorealistic image"
 
 Output JSON:
 {{
     "inspection_results": [
-        {{"scene": 1, "status": "approved/refined", "original": "...", "refined": "FIXED prompt ending with no text no words no captions clean photorealistic image", "reason": "..."}},
-        ...
+        {{
+            "scene": 1,
+            "status": "approved/refined",
+            "original": "...",
+            "refined": "corrected realistic prompt, anatomically correct, no text, no words, no captions, clean photorealistic image",
+            "reason": "what was wrong and how you fixed it"
+        }}
     ],
     "overall_quality": "excellent/good/needs_improvement",
     "main_issues_fixed": ["issue1", "issue2"]

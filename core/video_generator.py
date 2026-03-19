@@ -21,6 +21,7 @@ from config.constants import JobStatus
 from core.content_analyzer import ContentAnalyzer
 from core.prompt_generator import PromptGenerator
 from core.realtime_context import needs_realtime_info, fetch_realtime_context
+from core.real_image_fetcher import get_reference_images_for_scenes
 from core.job_queue import VideoJob
 
 
@@ -165,17 +166,40 @@ class VideoGenerator:
             prompts_file = job_dir / "image_prompts.txt"
             self._save_prompts_log(prompts_file, job, prompt_analysis, refined_result, final_prompts)
             
-            # Step 5: Generate images
+            # Step 5: Fetch real reference images if real entities detected
+            if job.notification_callback:
+                await job.notification_callback("🔎 Step 4/5: Checking for real-world references...")
+            
+            scene_reference_images = await get_reference_images_for_scenes(
+                prompt=job.prompt,
+                scenes=job.metadata["scenes"],
+                output_dir=images_dir
+            )
+            
+            has_references = any(v is not None for v in scene_reference_images.values())
+            if has_references:
+                logger.info("Real reference images found - using img2img for accurate visuals")
+                if job.notification_callback:
+                    await job.notification_callback("📸 Real reference images found! Generating accurate visuals...")
+            
+            # Step 6: Generate images (with per-scene reference if available)
             try:
-                reference_image = self._get_reference_image(job.metadata)
+                # Fall back to job-level reference image if no scene-level ones
+                global_reference = self._get_reference_image(job.metadata)
                 
-                image_results = await self.image_provider.generate_batch(
-                    prompts=final_prompts,
-                    output_dir=images_dir,
-                    width=settings.video_width,
-                    height=settings.video_height,
-                    reference_image=reference_image
-                )
+                tasks = []
+                for i, prompt in enumerate(final_prompts):
+                    output_path = images_dir / f"scene_{i+1}.png"
+                    ref_img = scene_reference_images.get(i) or global_reference
+                    tasks.append(self.image_provider.generate_image(
+                        prompt=prompt,
+                        output_path=output_path,
+                        width=settings.video_width,
+                        height=settings.video_height,
+                        reference_image=ref_img
+                    ))
+                
+                image_results = await asyncio.gather(*tasks)
                 
                 if not all(hasattr(img, 'image_path') for img in image_results):
                     raise Exception("Image generation failed - some images could not be created")
